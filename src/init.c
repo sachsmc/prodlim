@@ -1,7 +1,7 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
-/* FIXME: 
+/* FIXME:
    Check these declarations against the C/Fortran source code.
 */
 
@@ -13,6 +13,7 @@ extern void iindexSRC(void *, void *, void *, void *, void *, void *, void *);
 extern void IntIndexSRC(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void life_table(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void loo_comprisk(void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void loo_comprisk2(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void loo_surv(void *, void *, void *, void *, void *, void *, void *, void *);
 extern void neighborhoodSRC(void *, void *, void *, void *, void *, void *, void *, void *);
 extern void neighborsSRC(void *, void *, void *, void *, void *);
@@ -31,6 +32,7 @@ static const R_CMethodDef CEntries[] = {
     {"IntIndexSRC",                 (DL_FUNC) &IntIndexSRC,                 10},
     {"life_table",                  (DL_FUNC) &life_table,                  13},
     {"loo_comprisk",                (DL_FUNC) &loo_comprisk,                 9},
+    {"loo_comprisk2",                (DL_FUNC) &loo_comprisk2,              11},
     {"loo_surv",                    (DL_FUNC) &loo_surv,                     8},
     {"neighborhoodSRC",             (DL_FUNC) &neighborhoodSRC,              8},
     {"neighborsSRC",                (DL_FUNC) &neighborsSRC,                 5},

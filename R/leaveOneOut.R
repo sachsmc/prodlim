@@ -2,15 +2,15 @@
 #'
 #' This function is the work-horse for \code{jackknife}
 #' @title Compute jackknife pseudo values.
-#' @aliases leaveOneOut leaveOneOut.survival leaveOneOut.competing.risks 
+#' @aliases leaveOneOut leaveOneOut.survival leaveOneOut.competing.risks
 #' @author Thomas Alexander Gerds <tag@@biostat.ku.dk>
 #' @seealso \code{\link{jackknife}}
-#' 
+#'
 #' @param object Object of class \code{"prodlim"}.
 #' @param times time points at which to compute leave-one-out
 #' event/survival probabilities.
 #' @param cause Character (other classes are converted with \code{as.character}).
-#' For competing risks the cause of interest. 
+#' For competing risks the cause of interest.
 #' @param lag For survival models only. If \code{TRUE} lag the result, i.e. compute
 #' S(t-) instead of S(t).
 #' @param ... not used
@@ -26,7 +26,9 @@ leaveOneOut <- function(object,times,cause,lag=FALSE,...){
     else stop("No method for jackknifing this object.")
 }
 
-#' @export 
+
+
+#' @export
 leaveOneOut.survival <- function(object,times,lag=FALSE,...){
   stopifnot(object$covariate.type==1)
   mr <- object$model.response
@@ -77,7 +79,8 @@ leaveOneOut.survival <- function(object,times,lag=FALSE,...){
   }
   out
 }
-#' @export 
+
+#' @export
 leaveOneOut.competing.risks <- function(object,times,cause,...){
   stopifnot(object$covariate.type==1)
   mr <- object$model.response
@@ -85,8 +88,7 @@ leaveOneOut.competing.risks <- function(object,times,cause,...){
   if (missing(cause)) {
     C <- 1
     cause <- states[1]
-  }
-  else{
+  }   else{
     C <- match(cause,states,nomatch=0)
     if (length(C)>1 || C==0) stop("Cause must match exactly one of the names of object$n.event.")
   }
@@ -110,8 +112,8 @@ leaveOneOut.competing.risks <- function(object,times,cause,...){
   loo <- .C("loo_comprisk",
             Y = as.double(Y),
             D=as.double(D),
-            time=as.double(time),
-            obsT=as.double(obstimes),
+            time=as.double(time),  ## sorted and unique observation times
+            obsT=as.double(obstimes), ### observed times
             status=as.double(status*(E==cause)),
             lagSurv=as.double(lagSk),
             F=double(NU*N),
@@ -119,6 +121,77 @@ leaveOneOut.competing.risks <- function(object,times,cause,...){
             NT=as.integer(NU),
             PACKAGE="prodlim")$F
   out <- matrix(loo,nrow=N,ncol=NU,byrow=FALSE)
+  ## browser()
+  ## }
+  ## else{
+  ## pos <- sindex(jump.times=time,eval.times=obstimes)
+  ## loo <- do.call("rbind",lapply(1:N,function(k){
+  ## Dk <- D
+  ## if (status[k]==1 && E[k]==cause) Dk[pos[k]] <- Dk[pos[k]]-1
+  ## Yk <- Y-c(rep(1,pos[k]),rep(0,NU-pos[k]))
+  ## Sk <- as.numeric(lagSk[k,,drop=TRUE])
+  ## Hk <- Dk/Yk
+  ## Fk <- cumsum(Sk*Hk)
+  ## Fk
+  ## }))
+  ## out <- loo
+  ## }
+  if (!missing(times)){
+    found <- sindex(jump.times=time,eval.times=times)+1
+    out <- cbind(0,out)[,found,drop=TRUE]
+  }
+  out
+}
+
+
+
+#' @export
+leaveOneOut.competing.risks2 <- function(object,times,cause,...){
+  stopifnot(object$covariate.type==1)
+  stopifnot(length(times) == 1)
+  mr <- object$model.response
+  states <- attr(mr,"states")
+  if (missing(cause)) {
+    C <- 1
+    cause <- states[1]
+  }   else{
+    C <- match(cause,states,nomatch=0)
+    if (length(C)>1 || C==0) stop("Cause must match exactly one of the names of object$n.event.")
+  }
+  D <- object$n.event[[C]]
+  D0 <- rowSums(do.call(cbind, object$n.event))
+  #  it is sufficient to consider time points where events occur
+  time <- object$time[D0>0]
+  Y <- object$n.risk[D0>0]
+
+  D <- D[D>0]
+  D0 <- D0[D0>0]
+
+  NU <- length(time)
+  obstimes <- mr[,"time"]
+  status <- mr[,"status"]
+  E <- getEvent(mr)
+  N <- length(obstimes)
+  tdex <- max(which(time <= times))
+  ## idea: see leaveOneOut.survival
+  ## idea: see leaveOneOut.survival
+  ## browser()
+  ## if (useC==TRUE){
+  ## print(cbind(time=time,Y=Y,D=D))
+  loo2 <- .C("loo_comprisk2",
+            Y = as.double(Y),
+            D=as.double(D),
+            D0 = as.double(D0),
+            time=as.double(time),
+            obsT=as.double(obstimes),
+            status=as.double(status*(E==cause)),
+            status0=as.double(status),
+            F=double(N),
+            N=as.integer(N),
+            NT=as.integer(NU),
+            Tdex=as.integer(tdex),
+            PACKAGE="prodlim")$F
+  out <- matrix(loo,nrow=N,ncol=1,byrow=FALSE)
   ## browser()
   ## }
   ## else{

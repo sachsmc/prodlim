@@ -1,9 +1,9 @@
 /*
-  (2011) Thomas A. Gerds 
+  (2011) Thomas A. Gerds
   --------------------------------------------------------------------
-  distributed under the terms of the GNU public license 
+  distributed under the terms of the GNU public license
 */
-	      
+
 #include <math.h>
 #include <R.h>
 
@@ -12,7 +12,7 @@ void loo_surv(double *Y,
 	      double *time,
 	      double *obsT,
 	      double *status,
-	      double *S, 
+	      double *S,
 	      int *N,
 	      int *NT){
   int k, t;
@@ -59,7 +59,7 @@ void loo_comprisk(double *Y,
 		  double *obsT,
 		  double *status,
 		  double *lagSurv,
-		  double *F, 
+		  double *F,
 		  int *N,
 		  int *NT){
   int k, t;
@@ -96,4 +96,81 @@ void loo_comprisk(double *Y,
     }
   }
 }
+
+
+void loo_comprisk2(double *Y,
+                  double *D,
+                  double *D0,
+                  double *time,
+                  double *obsT,
+                  double *status,
+                  double *status0,
+                  double *F,
+                  int *N,
+                  int *NT,
+                  int *Tdex){
+    int k, t;
+    double na,aj,na0,ls;
+    for (k=0; k<*N;k++){
+        /* compute the Nelson-Aalen estimate */
+        aj=0;
+        ls=1;
+        for (t=0; t<*NT;t++){
+            if(t > 0) {
+                if(obsT[k] > time[t - 1]) {
+                    na0 = D0[t - 1]/(Y[t - 1]-1);
+                }
+                else {
+                    if(obsT[k]==time[t-1]) {
+                        na0 = (D0[t-1]-status0[k])/(Y[t-1]-1);
+                    }
+                    else {
+                        na0 = D0[t-1]/Y[t-1];
+                    }
+
+                }
+
+            } else {
+                na0 = 0;
+            }
+
+
+            if (obsT[k]>time[t]){
+                /* decrease the number at risk
+                 because k was in the risk set at time[t]
+                 */
+                na = D[t]/(Y[t]-1);
+
+
+
+            }
+            else{
+                if (obsT[k]==time[t]){
+                    /*
+                     decrease the number of events
+                     if k was an event,
+                     and decrease the number at risk
+                     because k was in the risk set at
+                     time[t]
+                     */
+                    na = (D[t]-status[k])/(Y[t]-1);
+
+                }
+                else{
+                    /* do nothing */
+                    na = D[t]/Y[t];
+
+                }
+            }
+            ls *= (1-na0);
+            /* compute the Aalen-Johansen estimate */
+            aj += ls*na;
+
+            if(t+1 == *Tdex) {
+            F[k]=aj;
+            }
+        }
+    }
+}
+
 

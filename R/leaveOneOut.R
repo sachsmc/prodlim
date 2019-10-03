@@ -159,12 +159,14 @@ leaveOneOut.competing.risks2 <- function(object,times,cause,...){
     if (length(C)>1 || C==0) stop("Cause must match exactly one of the names of object$n.event.")
   }
   D <- object$n.event[[C]]
+  #  it is sufficient to consider time points where events occur
+
   D0 <- rowSums(do.call(cbind, object$n.event))
   #  it is sufficient to consider time points where events occur
   time <- object$time[D0>0]
   Y <- object$n.risk[D0>0]
 
-  D <- D[D>0]
+  D <- D[D0>0]
   D0 <- D0[D0>0]
 
   NU <- length(time)
@@ -174,24 +176,22 @@ leaveOneOut.competing.risks2 <- function(object,times,cause,...){
   N <- length(obstimes)
   tdex <- max(which(time <= times))
   ## idea: see leaveOneOut.survival
-  ## idea: see leaveOneOut.survival
   ## browser()
   ## if (useC==TRUE){
   ## print(cbind(time=time,Y=Y,D=D))
   loo2 <- .C("loo_comprisk2",
-            Y = as.double(Y),
-            D=as.double(D),
-            D0 = as.double(D0),
-            time=as.double(time),
-            obsT=as.double(obstimes),
-            status=as.double(status*(E==cause)),
-            status0=as.double(status),
-            F=double(N),
-            N=as.integer(N),
-            NT=as.integer(NU),
-            Tdex=as.integer(tdex),
-            PACKAGE="prodlim")$F
-  out <- matrix(loo,nrow=N,ncol=1,byrow=FALSE)
+             Y = as.double(Y),
+             D=as.double(D),
+             D0 = as.double(D0),
+             time=as.double(time),
+             obsT=as.double(obstimes),
+             status=as.double(status*(E==cause)),
+             status0=as.double(status),
+             F=double(N),
+             N=as.integer(N),
+             NT=as.integer(NU),
+             Tdex=as.integer(tdex - 1),
+             PACKAGE="prodlim")$F
   ## browser()
   ## }
   ## else{
@@ -207,9 +207,6 @@ leaveOneOut.competing.risks2 <- function(object,times,cause,...){
   ## }))
   ## out <- loo
   ## }
-  if (!missing(times)){
-    found <- sindex(jump.times=time,eval.times=times)+1
-    out <- cbind(0,out)[,found,drop=TRUE]
-  }
-  out
+
+  loo2
 }

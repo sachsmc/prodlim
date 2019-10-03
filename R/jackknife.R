@@ -1,9 +1,9 @@
 #' Compute jackknife pseudo values.
-#' 
+#'
 #' Compute jackknife pseudo values based on marginal Kaplan-Meier estimate of
 #' survival, or based on marginal Aalen-Johansen estimate of cumulative
 #' incidence.
-#' 
+#'
 #' @title Compute jackknife pseudo values.
 #' @aliases jackknife jackknife.survival jackknife.competing.risks
 #' @param object Object of class \code{"prodlim"}.
@@ -20,24 +20,24 @@
 #' analysis Statistical Methods in Medical Research, 19(1), 71-99.
 #' @keywords survival
 ##' @examples
-##' 
-##' 
+##'
+##'
 ##' ## pseudo-values for survival models
-##' 
-##' d=SimSurv(20) 
-##' f=prodlim(Hist(time,status)~1,data=d) 
+##'
+##' d=SimSurv(20)
+##' f=prodlim(Hist(time,status)~1,data=d)
 ##' jackknife(f,times=c(3,5))
-##' 
+##'
 ##' ## in some situations it may be useful to attach the
 ##' ## the event time history to the result
 ##' jackknife(f,times=c(3,5),keepResponse=TRUE)
-##' 
+##'
 ##' # pseudo-values for competing risk models
-##' d=SimCompRisk(10) 
-##' f=prodlim(Hist(time,event)~1,data=d) 
+##' d=SimCompRisk(10)
+##' f=prodlim(Hist(time,event)~1,data=d)
 ##' jackknife(f,times=c(3,10),cause=1)
 ##' jackknife(f,times=c(3,10,17),cause=2)
-##' 
+##'
 #' @export
 jackknife <- function(object,times,cause,keepResponse=FALSE,...){
     if (object$model=="survival")
@@ -64,15 +64,24 @@ jackknife.survival <- function(object,times,keepResponse=FALSE,...){
   if (keepResponse==TRUE){
     Jk <- cbind(object$model.response,Jk)
   }
-  ## re-order the pseudo-values  
+  ## re-order the pseudo-values
   Jk <- Jk[object$originalDataOrder,,drop=FALSE]
   Jk
 }
 #' @export
 jackknife.competing.risks <- function(object,times,cause,keepResponse=FALSE,...){
   F <- predict(object,times=times,newdata=object$model.response,cause=cause)
-  Fk <- leaveOneOut.competing.risks(object,times,cause=cause,...)
-  N <- NROW(Fk)
+
+  if(length(times) == 1) {
+    Fk <- leaveOneOut.competing.risks2(object,times,cause=cause,...)
+    N <- length(Fk)
+    Jk <- N*F-(N-1)*Fk
+    Jk[object$originalDataOrder]
+
+  } else {
+    Fk <- leaveOneOut.competing.risks(object,times,cause=cause,...)
+    N <- NROW(Fk)
+
   Jk <- t(N*F-t((N-1)*Fk))
   colnames(Jk) <- paste("t",times,sep=".")
   if (keepResponse==TRUE){
@@ -82,6 +91,7 @@ jackknife.competing.risks <- function(object,times,cause,keepResponse=FALSE,...)
   ## re-order the pseudo-values
   Jk <- Jk[object$originalDataOrder,,drop=FALSE]
   Jk
+  }
 }
 
 

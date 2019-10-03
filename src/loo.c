@@ -166,7 +166,7 @@ void loo_comprisk2(double *Y,
             /* compute the Aalen-Johansen estimate */
             aj += ls*na;
 
-            if(t+1 == *Tdex) {
+            if(t == *Tdex){
             F[k]=aj;
             }
         }
